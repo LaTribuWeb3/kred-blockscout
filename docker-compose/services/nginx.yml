@@ -8,7 +8,9 @@ services:
       - 'host.docker.internal:host-gateway'
     volumes:
       - "../proxy:/etc/nginx/templates"
-      - "/etc/letsencrypt/live/:/etc/letsencrypt/live/"
+      - "/etc/letsencrypt/live/explorer.kred.la-tribu.xyz:/etc/letsencrypt/live/explorer.kred.la-tribu.xyz"
+      - "/etc/letsencrypt/live/stats.kred.la-tribu.xyz:/etc/letsencrypt/live/stats.kred.la-tribu.xyz"
+      - "/etc/letsencrypt/live/visualizer.kred.la-tribu.xyz:/etc/letsencrypt/live/visualizer.kred.la-tribu.xyz"
     environment:
       BACK_PROXY_PASS: ${BACK_PROXY_PASS:-http://backend:4000}
       FRONT_PROXY_PASS: ${FRONT_PROXY_PASS:-http://frontend:3000}

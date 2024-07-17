@@ -8,9 +8,9 @@ server {
     listen       443 ssl;
     server_name  explorer.kred.la-tribu.xyz;
 
-    ssl_certificate /etc/nginx/certs/explorer.kred.la-tribu.xyz/fullchain.pem;
+    ssl_certificate /etc/letsencrypt/live/explorer.kred.la-tribu.xyz/fullchain.pem;
 
-    ssl_certificate_key /etc/nginx/certs/explorer.kred.la-tribu.xyz/privkey.pem;
+    ssl_certificate_key /etc/letsencrypt/live/explorer.kred.la-tribu.xyz/privkey.pem;
 
     ssl_session_cache builtin:1000 shared:SSL:10m;
 
@@ -50,9 +50,9 @@ server {
     listen       443 ssl;
     server_name  stats.kred.la-tribu.xyz;
 
-    ssl_certificate /etc/nginx/certs/stats.kred.la-tribu.xyz/fullchain.pem;
+    ssl_certificate /etc/letsencrypt/live/stats.kred.la-tribu.xyz/fullchain.pem;
 
-    ssl_certificate_key /etc/nginx/certs/stats.kred.la-tribu.xyz/privkey.pem;
+    ssl_certificate_key /etc/letsencrypt/live/stats.kred.la-tribu.xyz/privkey.pem;
 
     ssl_session_cache builtin:1000 shared:SSL:10m;
 
@@ -85,9 +85,9 @@ server {
     listen       443 ssl;
     server_name  visualizer.kred.la-tribu.xyz;
 
-    ssl_certificate /etc/nginx/certs/visualizer.kred.la-tribu.xyz/fullchain.pem;
+    ssl_certificate /etc/letsencrypt/live/visualizer.kred.la-tribu.xyz/fullchain.pem;
 
-    ssl_certificate_key /etc/nginx/certs/visualizer.kred.la-tribu.xyz/privkey.pem;
+    ssl_certificate_key /etc/letsencrypt/live/visualizer.kred.la-tribu.xyz/privkey.pem;
 
     ssl_session_cache builtin:1000 shared:SSL:10m;
 

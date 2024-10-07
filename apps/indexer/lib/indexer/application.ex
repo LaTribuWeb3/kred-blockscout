@@ -12,13 +12,9 @@ defmodule Indexer.Application do
   alias Indexer.Fetcher.OnDemand.TokenTotalSupply, as: TokenTotalSupplyOnDemand
 
   alias Indexer.Memory
-  alias Indexer.Prometheus.PendingBlockOperationsCollector
-  alias Prometheus.Registry
 
   @impl Application
   def start(_type, _args) do
-    Registry.register_collector(PendingBlockOperationsCollector)
-
     memory_monitor_options =
       case Application.get_env(:indexer, :memory_limit) do
         nil -> %{}
@@ -44,7 +40,9 @@ defmodule Indexer.Application do
         ) +
         token_instance_fetcher_pool_size(Indexer.Fetcher.TokenInstance.LegacySanitize, nil) +
         token_instance_fetcher_pool_size(Indexer.Fetcher.TokenInstance.SanitizeERC1155, nil) +
-        token_instance_fetcher_pool_size(Indexer.Fetcher.TokenInstance.SanitizeERC721, nil)
+        token_instance_fetcher_pool_size(Indexer.Fetcher.TokenInstance.SanitizeERC721, nil) + 1
+
+    # + 1 (above in pool_size calculation) for the Indexer.Fetcher.OnDemand.TokenInstanceMetadataRefetch
 
     base_children = [
       :hackney_pool.child_spec(:token_instance_fetcher, max_connections: pool_size),

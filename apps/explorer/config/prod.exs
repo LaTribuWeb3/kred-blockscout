@@ -39,6 +39,11 @@ config :explorer, Explorer.Repo.ZkSync,
   timeout: :timer.seconds(60),
   ssl_opts: [verify: :verify_none]
 
+config :explorer, Explorer.Repo.Celo,
+  prepare: :unnamed,
+  timeout: :timer.seconds(60),
+  ssl_opts: [verify: :verify_none]
+
 config :explorer, Explorer.Repo.RSK,
   prepare: :unnamed,
   timeout: :timer.seconds(60),
@@ -80,6 +85,16 @@ config :explorer, Explorer.Repo.Stability,
   ssl_opts: [verify: :verify_none]
 
 config :explorer, Explorer.Repo.Mud,
+  prepare: :unnamed,
+  timeout: :timer.seconds(60),
+  ssl_opts: [verify: :verify_none]
+
+config :explorer, Explorer.Repo.ShrunkInternalTransactions,
+  prepare: :unnamed,
+  timeout: :timer.seconds(60),
+  ssl_opts: [verify: :verify_none]
+
+config :explorer, Explorer.Repo.Blackfort,
   prepare: :unnamed,
   timeout: :timer.seconds(60),
   ssl_opts: [verify: :verify_none]

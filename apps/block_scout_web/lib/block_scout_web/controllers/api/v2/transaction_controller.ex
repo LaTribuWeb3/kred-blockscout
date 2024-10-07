@@ -33,6 +33,8 @@ defmodule BlockScoutWeb.API.V2.TransactionController do
       preload: 2
     ]
 
+  require Logger
+
   alias BlockScoutWeb.AccessHelper
   alias BlockScoutWeb.MicroserviceInterfaces.TransactionInterpretation, as: TransactionInterpretationService
   alias BlockScoutWeb.Models.TransactionStateHelper
@@ -54,6 +56,11 @@ defmodule BlockScoutWeb.API.V2.TransactionController do
         :beacon_blob_transaction => :optional
       }
 
+    :celo ->
+      @chain_type_transaction_necessity_by_association %{
+        :gas_token => :optional
+      }
+
     _ ->
       @chain_type_transaction_necessity_by_association %{}
   end
@@ -63,6 +70,7 @@ defmodule BlockScoutWeb.API.V2.TransactionController do
                                           :block => :optional,
                                           [
                                             created_contract_address: [
+                                              :scam_badge,
                                               :names,
                                               :token,
                                               :smart_contract,
@@ -71,26 +79,33 @@ defmodule BlockScoutWeb.API.V2.TransactionController do
                                           ] => :optional,
                                           [from_address: [:names, :smart_contract, :proxy_implementations]] =>
                                             :optional,
-                                          [to_address: [:names, :smart_contract, :proxy_implementations]] => :optional
+                                          [
+                                            to_address: [
+                                              :scam_badge,
+                                              :names,
+                                              :smart_contract,
+                                              :proxy_implementations
+                                            ]
+                                          ] => :optional
                                         }
                                         |> Map.merge(@chain_type_transaction_necessity_by_association)
 
   @token_transfers_necessity_by_association %{
-    [from_address: [:names, :smart_contract, :proxy_implementations]] => :optional,
-    [to_address: [:names, :smart_contract, :proxy_implementations]] => :optional
+    [from_address: [:scam_badge, :names, :smart_contract, :proxy_implementations]] => :optional,
+    [to_address: [:scam_badge, :names, :smart_contract, :proxy_implementations]] => :optional
   }
 
   @token_transfers_in_tx_necessity_by_association %{
-    [from_address: [:names, :smart_contract, :proxy_implementations]] => :optional,
-    [to_address: [:names, :smart_contract, :proxy_implementations]] => :optional,
+    [from_address: [:scam_badge, :names, :smart_contract, :proxy_implementations]] => :optional,
+    [to_address: [:scam_badge, :names, :smart_contract, :proxy_implementations]] => :optional,
     token: :required
   }
 
   @internal_transaction_necessity_by_association [
     necessity_by_association: %{
-      [created_contract_address: [:names, :smart_contract, :proxy_implementations]] => :optional,
-      [from_address: [:names, :smart_contract, :proxy_implementations]] => :optional,
-      [to_address: [:names, :smart_contract, :proxy_implementations]] => :optional
+      [created_contract_address: [:scam_badge, :names, :smart_contract, :proxy_implementations]] => :optional,
+      [from_address: [:scam_badge, :names, :smart_contract, :proxy_implementations]] => :optional,
+      [to_address: [:scam_badge, :names, :smart_contract, :proxy_implementations]] => :optional
     }
   ]
 
@@ -333,27 +348,24 @@ defmodule BlockScoutWeb.API.V2.TransactionController do
   """
   @spec raw_trace(Plug.Conn.t(), map()) :: Plug.Conn.t() | {atom(), any()}
   def raw_trace(conn, %{"transaction_hash_param" => transaction_hash_string} = params) do
-    with {:ok, transaction, transaction_hash} <- validate_transaction(transaction_hash_string, params) do
+    with {:ok, transaction, _transaction_hash} <- validate_transaction(transaction_hash_string, params) do
       if is_nil(transaction.block_number) do
         conn
         |> put_status(200)
         |> render(:raw_trace, %{internal_transactions: []})
       else
-        internal_transactions =
-          InternalTransaction.all_transaction_to_internal_transactions(transaction_hash, @api_true)
+        FirstTraceOnDemand.maybe_trigger_fetch(transaction, @api_true)
 
-        first_trace_exists =
-          Enum.find_index(internal_transactions, fn trace ->
-            trace.index == 0
-          end)
+        case Chain.fetch_transaction_raw_traces(transaction) do
+          {:ok, raw_traces} ->
+            conn
+            |> put_status(200)
+            |> render(:raw_trace, %{raw_traces: raw_traces})
 
-        if !first_trace_exists do
-          FirstTraceOnDemand.trigger_fetch(transaction)
+          {:error, error} ->
+            Logger.error("Raw trace fetching failed: #{inspect(error)}")
+            {500, "Error while raw trace fetching"}
         end
-
-        conn
-        |> put_status(200)
-        |> render(:raw_trace, %{internal_transactions: internal_transactions})
       end
     end
   end
@@ -460,14 +472,7 @@ defmodule BlockScoutWeb.API.V2.TransactionController do
   """
   @spec state_changes(Plug.Conn.t(), map()) :: Plug.Conn.t() | {atom(), any()}
   def state_changes(conn, %{"transaction_hash_param" => transaction_hash_string} = params) do
-    with {:ok, transaction, _transaction_hash} <-
-           validate_transaction(transaction_hash_string, params,
-             necessity_by_association:
-               Map.merge(@transaction_necessity_by_association, %{
-                 [block: [miner: [:names, :smart_contract, :proxy_implementations]]] => :optional
-               }),
-             api?: true
-           ) do
+    with {:ok, transaction, _transaction_hash} <- validate_transaction(transaction_hash_string, params, api?: true) do
       state_changes_plus_next_page =
         transaction |> TransactionStateHelper.state_changes(params |> paging_options() |> Keyword.merge(api?: true))
 
@@ -518,7 +523,7 @@ defmodule BlockScoutWeb.API.V2.TransactionController do
            validate_transaction(transaction_hash_string, params,
              necessity_by_association: %{
                [from_address: [:names, :smart_contract, :proxy_implementations]] => :optional,
-               [to_address: [:names, :smart_contract, :proxy_implementations]] => :optional
+               [to_address: [:scam_badge, :names, :smart_contract, :proxy_implementations]] => :optional
              },
              api?: true
            ) do

@@ -14,7 +14,7 @@ defmodule Indexer.MixProject do
       elixirc_paths: elixirc_paths(Mix.env()),
       lockfile: "../../mix.lock",
       start_permanent: Mix.env() == :prod,
-      version: "6.7.2",
+      version: "6.8.1",
       xref: [
         exclude: [
           Explorer.Chain.Optimism.Deposit,
@@ -53,6 +53,7 @@ defmodule Indexer.MixProject do
       {:ethereum_jsonrpc, in_umbrella: true},
       # Brotli compression/decompression
       {:brotli, "~> 0.3.2"},
+      {:ex_keccak, "~> 0.7.5"},
       # RLP encoding
       {:ex_rlp, "~> 0.6.0"},
       # Importing to database

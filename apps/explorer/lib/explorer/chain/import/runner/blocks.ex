@@ -6,6 +6,7 @@ defmodule Explorer.Chain.Import.Runner.Blocks do
   require Ecto.Query
 
   import Ecto.Query, only: [from: 2, where: 3, subquery: 1]
+  import Explorer.Chain.Import.Runner.Helper, only: [chain_type_dependent_import: 3]
 
   alias Ecto.{Changeset, Multi, Repo}
 
@@ -23,6 +24,9 @@ defmodule Explorer.Chain.Import.Runner.Blocks do
     TokenTransfer,
     Transaction
   }
+
+  alias Explorer.Chain.Celo.Helper, as: CeloHelper
+  alias Explorer.Chain.Celo.PendingEpochBlockOperation, as: CeloPendingEpochBlockOperation
 
   alias Explorer.Chain.Block.Reward
   alias Explorer.Chain.Import.Runner
@@ -207,6 +211,19 @@ defmodule Explorer.Chain.Import.Runner.Blocks do
         :blocks_update_token_holder_counts
       )
     end)
+    |> chain_type_dependent_import(
+      :celo,
+      &Multi.run(&1, :celo_pending_epoch_block_operations, fn repo, %{blocks: blocks} ->
+        Instrumenter.block_import_stage_runner(
+          fn ->
+            celo_pending_epoch_block_operations(repo, blocks, insert_options)
+          end,
+          :address_referencing,
+          :blocks,
+          :celo_pending_epoch_block_operations
+        )
+      end)
+    )
   end
 
   @impl Runner
@@ -513,10 +530,8 @@ defmodule Explorer.Chain.Import.Runner.Blocks do
         select:
           map(ctb, [
             :address_hash,
-            :block_number,
             :token_contract_address_hash,
             :token_id,
-            :token_type,
             # Used to determine if `address_hash` was a holder of `token_contract_address_hash` before
 
             # `address_current_token_balance` is deleted in `update_tokens_holder_count`.
@@ -549,28 +564,43 @@ defmodule Explorer.Chain.Import.Runner.Blocks do
          %{timeout: timeout} = options
        )
        when is_list(deleted_address_current_token_balances) do
-    new_current_token_balances_placeholders =
-      Enum.map(deleted_address_current_token_balances, fn deleted_balance ->
-        now = DateTime.utc_now()
+    final_query = derive_address_current_token_balances_grouped_query(deleted_address_current_token_balances)
 
-        %{
-          address_hash: deleted_balance.address_hash,
-          token_contract_address_hash: deleted_balance.token_contract_address_hash,
-          token_id: deleted_balance.token_id,
-          token_type: deleted_balance.token_type,
-          block_number: deleted_balance.block_number,
-          value: nil,
-          value_fetched_at: nil,
-          inserted_at: now,
-          updated_at: now
-        }
-      end)
+    new_current_token_balance_query =
+      from(new_current_token_balance in subquery(final_query),
+        inner_join: tb in Address.TokenBalance,
+        on:
+          tb.address_hash == new_current_token_balance.address_hash and
+            tb.token_contract_address_hash == new_current_token_balance.token_contract_address_hash and
+            ((is_nil(tb.token_id) and is_nil(new_current_token_balance.token_id)) or
+               (tb.token_id == new_current_token_balance.token_id and
+                  not is_nil(tb.token_id) and not is_nil(new_current_token_balance.token_id))) and
+            tb.block_number == new_current_token_balance.block_number,
+        select: %{
+          address_hash: new_current_token_balance.address_hash,
+          token_contract_address_hash: new_current_token_balance.token_contract_address_hash,
+          token_id: new_current_token_balance.token_id,
+          token_type: tb.token_type,
+          block_number: new_current_token_balance.block_number,
+          value: tb.value,
+          value_fetched_at: tb.value_fetched_at,
+          inserted_at: over(min(tb.inserted_at), :w),
+          updated_at: over(max(tb.updated_at), :w)
+        },
+        windows: [
+          w: [partition_by: [tb.address_hash, tb.token_contract_address_hash, tb.token_id]]
+        ]
+      )
+
+    current_token_balance =
+      new_current_token_balance_query
+      |> repo.all()
 
     timestamps = Import.timestamps()
 
     result =
       CurrentTokenBalances.insert_changes_list_with_and_without_token_id(
-        new_current_token_balances_placeholders,
+        current_token_balance,
         repo,
         timestamps,
         timeout,
@@ -721,7 +751,7 @@ defmodule Explorer.Chain.Import.Runner.Blocks do
   end
 
   defp refs_to_token_transfers_query(historical_token_transfers_query, filtered_query) do
-    if Application.get_env(:explorer, :chain_type) == "polygon_zkevm" do
+    if Application.get_env(:explorer, :chain_type) in [:polygon_zkevm, :rsk] do
       from(historical_tt in subquery(historical_token_transfers_query),
         inner_join: tt in subquery(filtered_query),
         on:
@@ -762,7 +792,7 @@ defmodule Explorer.Chain.Import.Runner.Blocks do
   end
 
   defp derived_token_transfers_query(refs_to_token_transfers, filtered_query) do
-    if Application.get_env(:explorer, :chain_type) == "polygon_zkevm" do
+    if Application.get_env(:explorer, :chain_type) in [:polygon_zkevm, :rsk] do
       from(tt in filtered_query,
         inner_join: tt_1 in subquery(refs_to_token_transfers),
         on:
@@ -793,6 +823,43 @@ defmodule Explorer.Chain.Import.Runner.Blocks do
         ]
       ]
     )
+  end
+
+  defp derive_address_current_token_balances_grouped_query(deleted_address_current_token_balances) do
+    initial_query =
+      from(tb in Address.TokenBalance,
+        select: %{
+          address_hash: tb.address_hash,
+          token_contract_address_hash: tb.token_contract_address_hash,
+          token_id: tb.token_id,
+          block_number: max(tb.block_number)
+        },
+        group_by: [tb.address_hash, tb.token_contract_address_hash, tb.token_id]
+      )
+
+    Enum.reduce(deleted_address_current_token_balances, initial_query, fn %{
+                                                                            address_hash: address_hash,
+                                                                            token_contract_address_hash:
+                                                                              token_contract_address_hash,
+                                                                            token_id: token_id
+                                                                          },
+                                                                          acc_query ->
+      if token_id do
+        from(tb in acc_query,
+          or_where:
+            tb.address_hash == ^address_hash and
+              tb.token_contract_address_hash == ^token_contract_address_hash and
+              tb.token_id == ^token_id
+        )
+      else
+        from(tb in acc_query,
+          or_where:
+            tb.address_hash == ^address_hash and
+              tb.token_contract_address_hash == ^token_contract_address_hash and
+              is_nil(tb.token_id)
+        )
+      end
+    end)
   end
 
   # `block_rewards` are linked to `blocks.hash`, but fetched by `blocks.number`, so when a block with the same number is
@@ -915,5 +982,25 @@ defmodule Explorer.Chain.Import.Runner.Blocks do
     else
       blocks
     end
+  end
+
+  defp celo_pending_epoch_block_operations(repo, inserted_blocks, %{timeout: timeout, timestamps: timestamps}) do
+    ordered_epoch_blocks =
+      inserted_blocks
+      |> Enum.filter(fn block -> CeloHelper.epoch_block_number?(block.number) && block.consensus end)
+      |> Enum.map(&%{block_hash: &1.hash})
+      |> Enum.sort_by(& &1.block_hash)
+      |> Enum.dedup_by(& &1.block_hash)
+
+    Import.insert_changes_list(
+      repo,
+      ordered_epoch_blocks,
+      conflict_target: :block_hash,
+      on_conflict: :nothing,
+      for: CeloPendingEpochBlockOperation,
+      returning: true,
+      timeout: timeout,
+      timestamps: timestamps
+    )
   end
 end

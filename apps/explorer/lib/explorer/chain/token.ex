@@ -81,6 +81,7 @@ defmodule Explorer.Chain.Token do
   alias Ecto.Changeset
   alias Explorer.{Chain, SortingHelper}
   alias Explorer.Chain.{BridgedToken, Hash, Search, Token}
+  alias Explorer.Helper, as: ExplorerHelper
   alias Explorer.Repo
   alias Explorer.SmartContract.Helper
 
@@ -210,6 +211,7 @@ defmodule Explorer.Chain.Token do
 
     sorted_paginated_query =
       query
+      |> ExplorerHelper.maybe_hide_scam_addresses(:contract_address_hash)
       |> apply_filter(token_type)
       |> SortingHelper.apply_sorting(sorting, @default_sorting)
       |> SortingHelper.page_with_sorting(paging_options, sorting, @default_sorting)
@@ -277,5 +279,26 @@ defmodule Explorer.Chain.Token do
       [],
       timeout: @timeout
     )
+  end
+
+  @doc """
+  Drops token info for the given token:
+  Sets is_verified_via_admin_panel to false, icon_url to nil, symbol to nil, name to nil.
+  Don't forget to set/update token's symbol and name after this function.
+  """
+  @spec drop_token_info(t()) :: {:ok, t()} | {:error, Changeset.t()}
+  def drop_token_info(token) do
+    token
+    |> Changeset.change(%{is_verified_via_admin_panel: false, icon_url: nil, symbol: nil, name: nil})
+    |> Repo.update()
+  end
+
+  @doc """
+  Returns query for token by contract address hash
+  """
+  @spec token_by_contract_address_hash_query(binary() | Hash.Address.t()) :: Ecto.Query.t()
+  def token_by_contract_address_hash_query(contract_address_hash) do
+    __MODULE__
+    |> where([token], token.contract_address_hash == ^contract_address_hash)
   end
 end

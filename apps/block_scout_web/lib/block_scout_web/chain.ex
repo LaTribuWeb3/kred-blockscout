@@ -14,14 +14,18 @@ defmodule BlockScoutWeb.Chain do
       string_to_transaction_hash: 1
     ]
 
+  import Explorer.PagingOptions,
+    only: [
+      default_paging_options: 0,
+      page_size: 0
+    ]
+
   import Explorer.Helper, only: [parse_integer: 1]
 
   alias BlockScoutWeb.PagingHelper
   alias Ecto.Association.NotLoaded
-  alias Explorer.Chain.UserOperation
   alias Explorer.Account.{TagAddress, TagTransaction, WatchlistAddress}
   alias Explorer.Chain.Beacon.Reader, as: BeaconReader
-  alias Explorer.Chain.Block.Reward
 
   alias Explorer.Chain.{
     Address,
@@ -29,6 +33,7 @@ defmodule BlockScoutWeb.Chain do
     Address.CurrentTokenBalance,
     Beacon.Blob,
     Block,
+    Block.Reward,
     Hash,
     InternalTransaction,
     Log,
@@ -59,14 +64,10 @@ defmodule BlockScoutWeb.Chain do
     end
   end
 
-  @page_size 50
-  @default_paging_options %PagingOptions{page_size: @page_size + 1}
+  @page_size page_size()
+  @default_paging_options default_paging_options()
   @address_hash_len 40
   @full_hash_len 64
-
-  def default_paging_options do
-    @default_paging_options
-  end
 
   def current_filter(%{paging_options: paging_options} = params) do
     params
@@ -505,6 +506,21 @@ defmodule BlockScoutWeb.Chain do
 
   def paging_options(%{"block_index" => index}) when is_integer(index) do
     [paging_options: %{@default_paging_options | key: %{block_index: index}}]
+  end
+
+  # Clause for `Explorer.Chain.Blackfort.Validator`,
+  #  returned by `BlockScoutWeb.API.V2.ValidatorController.blackfort_validators_list/2` (`/api/v2/validators/blackfort`)
+  def paging_options(%{
+        "address_hash" => address_hash_string
+      }) do
+    [
+      paging_options: %{
+        @default_paging_options
+        | key: %{
+            address_hash: parse_address_hash(address_hash_string)
+          }
+      }
+    ]
   end
 
   def paging_options(_params), do: [paging_options: @default_paging_options]

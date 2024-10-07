@@ -177,16 +177,13 @@ defmodule BlockScoutWeb.Notifier do
   def handle_event({:chain_event, :token_transfers, :realtime, all_token_transfers}) do
     all_token_transfers_full =
       all_token_transfers
-      |> Enum.map(
-        &(&1
-          |> Repo.preload(
-            DenormalizationHelper.extend_transaction_preload([
-              :token,
-              :transaction,
-              from_address: [:names, :smart_contract, :proxy_implementations],
-              to_address: [:names, :smart_contract, :proxy_implementations]
-            ])
-          ))
+      |> Repo.preload(
+        DenormalizationHelper.extend_transaction_preload([
+          :token,
+          :transaction,
+          from_address: [:scam_badge, :names, :smart_contract, :proxy_implementations],
+          to_address: [:scam_badge, :names, :smart_contract, :proxy_implementations]
+        ])
       )
 
     transfers_by_token = Enum.group_by(all_token_transfers_full, fn tt -> to_string(tt.token_contract_address_hash) end)
@@ -208,9 +205,9 @@ defmodule BlockScoutWeb.Notifier do
   def handle_event({:chain_event, :transactions, :realtime, transactions}) do
     base_preloads = [
       :block,
-      created_contract_address: [:names, :smart_contract, :proxy_implementations],
+      created_contract_address: [:scam_badge, :names, :smart_contract, :proxy_implementations],
       from_address: [:names, :smart_contract, :proxy_implementations],
-      to_address: [:names, :smart_contract, :proxy_implementations]
+      to_address: [:scam_badge, :names, :smart_contract, :proxy_implementations]
     ]
 
     preloads = if API_V2.enabled?(), do: [:token_transfers | base_preloads], else: base_preloads

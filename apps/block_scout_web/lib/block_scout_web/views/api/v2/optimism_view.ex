@@ -60,7 +60,7 @@ defmodule BlockScoutWeb.API.V2.OptimismView do
     items =
       batches
       |> Enum.map(fn batch ->
-        from..to = batch.l2_block_range
+        from..to//_ = batch.l2_block_range
 
         %{
           "internal_id" => batch.id,
@@ -68,7 +68,8 @@ defmodule BlockScoutWeb.API.V2.OptimismView do
           "l2_block_start" => from,
           "l2_block_end" => to,
           "tx_count" => batch.tx_count,
-          "l1_tx_hashes" => batch.l1_transaction_hashes
+          "l1_tx_hashes" => batch.l1_transaction_hashes,
+          "batch_data_container" => batch.batch_data_container
         }
       end)
 

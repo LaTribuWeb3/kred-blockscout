@@ -21,14 +21,17 @@ defmodule ConfigHelper do
         :filecoin -> base_repos ++ [Explorer.Repo.Filecoin]
         :stability -> base_repos ++ [Explorer.Repo.Stability]
         :zksync -> base_repos ++ [Explorer.Repo.ZkSync]
+        :celo -> base_repos ++ [Explorer.Repo.Celo]
         :arbitrum -> base_repos ++ [Explorer.Repo.Arbitrum]
+        :blackfort -> base_repos ++ [Explorer.Repo.Blackfort]
         _ -> base_repos
       end
 
     ext_repos =
       [
         {parse_bool_env_var("BRIDGED_TOKENS_ENABLED"), Explorer.Repo.BridgedTokens},
-        {parse_bool_env_var("MUD_INDEXER_ENABLED"), Explorer.Repo.Mud}
+        {parse_bool_env_var("MUD_INDEXER_ENABLED"), Explorer.Repo.Mud},
+        {parse_bool_env_var("SHRINK_INTERNAL_TRANSACTIONS_ENABLED"), Explorer.Repo.ShrunkInternalTransactions}
       ]
       |> Enum.filter(&elem(&1, 0))
       |> Enum.map(&elem(&1, 1))
@@ -172,10 +175,21 @@ defmodule ConfigHelper do
 
   @spec exchange_rates_source() :: Source.CoinGecko | Source.CoinMarketCap | Source.Mobula
   def exchange_rates_source do
-    case System.get_env("EXCHANGE_RATES_MARKET_CAP_SOURCE") do
+    case System.get_env("EXCHANGE_RATES_SOURCE") do
       "coin_gecko" -> Source.CoinGecko
       "coin_market_cap" -> Source.CoinMarketCap
       "mobula" -> Source.Mobula
+      _ -> Source.CoinGecko
+    end
+  end
+
+  @spec exchange_rates_secondary_coin_source() :: Source.CoinGecko | Source.CoinMarketCap | Source.Mobula
+  def exchange_rates_secondary_coin_source do
+    case System.get_env("EXCHANGE_RATES_SECONDARY_COIN_SOURCE") do
+      "coin_gecko" -> Source.CoinGecko
+      "coin_market_cap" -> Source.CoinMarketCap
+      "mobula" -> Source.Mobula
+      "cryptorank" -> Source.Cryptorank
       _ -> Source.CoinGecko
     end
   end
@@ -205,6 +219,7 @@ defmodule ConfigHelper do
       "coin_market_cap" -> Price.CoinMarketCap
       "crypto_compare" -> Price.CryptoCompare
       "mobula" -> Price.Mobula
+      "cryptorank" -> Source.Cryptorank
       _ -> Price.CryptoCompare
     end
   end
@@ -216,13 +231,22 @@ defmodule ConfigHelper do
     cg_secondary_coin_id = System.get_env("EXCHANGE_RATES_COINGECKO_SECONDARY_COIN_ID")
     cc_secondary_coin_symbol = System.get_env("EXCHANGE_RATES_CRYPTOCOMPARE_SECONDARY_COIN_SYMBOL")
     mobula_secondary_coin_id = System.get_env("EXCHANGE_RATES_MOBULA_SECONDARY_COIN_ID")
+    cryptorank_secondary_coin_id = System.get_env("EXCHANGE_RATES_CRYPTORANK_SECONDARY_COIN_ID")
 
     cond do
       cg_secondary_coin_id && cg_secondary_coin_id !== "" -> Price.CoinGecko
       cmc_secondary_coin_id && cmc_secondary_coin_id !== "" -> Price.CoinMarketCap
       cc_secondary_coin_symbol && cc_secondary_coin_symbol !== "" -> Price.CryptoCompare
       mobula_secondary_coin_id && mobula_secondary_coin_id !== "" -> Price.Mobula
+      cryptorank_secondary_coin_id && cryptorank_secondary_coin_id !== "" -> Source.Cryptorank
       true -> Price.CryptoCompare
+    end
+  end
+
+  def token_exchange_rates_source do
+    case System.get_env("TOKEN_EXCHANGE_RATES_SOURCE") do
+      "cryptorank" -> Source.Cryptorank
+      _ -> Source.CoinGecko
     end
   end
 
@@ -252,7 +276,7 @@ defmodule ConfigHelper do
   end
 
   @spec parse_json_env_var(String.t(), String.t()) :: any()
-  def parse_json_env_var(env_var, default_value) do
+  def parse_json_env_var(env_var, default_value \\ "{}") do
     env_var
     |> safe_get_env(default_value)
     |> Jason.decode!()
@@ -292,11 +316,18 @@ defmodule ConfigHelper do
     "stability",
     "suave",
     "zetachain",
-    "zksync"
+    "zksync",
+    "celo",
+    "blackfort"
   ]
 
   @spec chain_type() :: atom() | nil
   def chain_type, do: parse_catalog_value("CHAIN_TYPE", @supported_chain_types, true, "default")
+
+  @supported_modes ["all", "indexer", "api"]
+
+  @spec mode :: atom()
+  def mode, do: parse_catalog_value("APPLICATION_MODE", @supported_modes, true, "all")
 
   @spec eth_call_url(String.t() | nil) :: String.t() | nil
   def eth_call_url(default \\ nil) do

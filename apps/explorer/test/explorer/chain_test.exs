@@ -280,9 +280,7 @@ defmodule Explorer.ChainTest do
         |> insert(to_address: address)
         |> with_block()
 
-      _log1 = insert(:log, transaction: transaction, index: 1, address: address, block_number: transaction.block_number)
-
-      2..51
+      1..51
       |> Enum.map(fn index ->
         insert(:log,
           block: transaction.block,
@@ -292,7 +290,6 @@ defmodule Explorer.ChainTest do
           block_number: transaction.block_number
         )
       end)
-      |> Enum.map(& &1.index)
 
       paging_options1 = %PagingOptions{page_size: 1}
 
@@ -2599,7 +2596,8 @@ defmodule Explorer.ChainTest do
           :contracts_creation_internal_transaction,
           :contracts_creation_transaction,
           :token,
-          [smart_contract: :smart_contract_additional_sources]
+          [smart_contract: :smart_contract_additional_sources],
+          :proxy_implementations
         ])
 
       options = [
@@ -2611,8 +2609,6 @@ defmodule Explorer.ChainTest do
           :contracts_creation_transaction => :optional
         }
       ]
-
-      TestHelper.get_eip1967_implementation_zero_addresses()
 
       response = Chain.find_contract_address(address.hash, options, true)
 
@@ -3040,7 +3036,7 @@ defmodule Explorer.ChainTest do
         |> insert()
         |> with_block(block)
 
-      insert(:log, address: address, transaction: transaction)
+      insert(:log, address: address, transaction: transaction, block: block, block_number: block.number)
 
       balance = insert(:unfetched_balance, address_hash: address.hash, block_number: block.number)
 
@@ -3230,7 +3226,7 @@ defmodule Explorer.ChainTest do
         |> insert()
         |> with_block(log_block)
 
-      insert(:log, address: miner, transaction: log_transaction)
+      insert(:log, address: miner, transaction: log_transaction, block: log_block, block_number: log_block.number)
       insert(:unfetched_balance, address_hash: miner.hash, block_number: log_block.number)
 
       from_internal_transaction_block = insert(:block)
@@ -3311,7 +3307,7 @@ defmodule Explorer.ChainTest do
         |> insert()
         |> with_block(block)
 
-      insert(:log, address: miner, transaction: log_transaction)
+      insert(:log, address: miner, transaction: log_transaction, block: block, block_number: block.number)
 
       from_internal_transaction_transaction =
         :transaction
@@ -4325,6 +4321,9 @@ defmodule Explorer.ChainTest do
         end
       )
 
+      init_config = Application.get_env(:ethereum_jsonrpc, EthereumJSONRPC.Geth)
+      Application.put_env(:ethereum_jsonrpc, EthereumJSONRPC.Geth, tracer: "call_tracer", debug_trace_timeout: "5s")
+
       assert Chain.transaction_to_revert_reason(transaction) == hex_reason
 
       assert Transaction.decoded_revert_reason(transaction, hex_reason) == {
@@ -4333,6 +4332,20 @@ defmodule Explorer.ChainTest do
                "Error(string reason)",
                [{"reason", "string", "No credit of that type"}]
              }
+
+      Application.put_env(:ethereum_jsonrpc, EthereumJSONRPC.Geth, init_config)
+    end
+  end
+
+  describe "timestamp_to_block_number/3" do
+    test "returns correct block number when given timestamp is equal to block timestamp" do
+      timestamp = DateTime.from_unix!(60 * 60 * 24 * 1, :second)
+      block = insert(:block, timestamp: timestamp)
+      expected = {:ok, block.number}
+
+      assert ^expected = Chain.timestamp_to_block_number(timestamp, :after, true)
+
+      assert ^expected = Chain.timestamp_to_block_number(timestamp, :before, true)
     end
   end
 end

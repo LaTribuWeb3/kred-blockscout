@@ -24,7 +24,7 @@ defmodule Explorer.Mixfile do
         dialyzer: :test
       ],
       start_permanent: Mix.env() == :prod,
-      version: "6.7.2",
+      version: "6.8.1",
       xref: [exclude: [BlockScoutWeb.Routers.WebRouter.Helpers, Indexer.Helper]]
     ]
   end
@@ -78,6 +78,7 @@ defmodule Explorer.Mixfile do
       {:ecto_sql, "~> 3.3"},
       # JSONRPC access to query smart contracts
       {:ethereum_jsonrpc, in_umbrella: true},
+      {:ex_keccak, "~> 0.7.5"},
       # Data factory for testing
       {:ex_machina, "~> 2.3", only: [:test]},
       {:exvcr, "~> 0.10", only: :test},
@@ -109,18 +110,21 @@ defmodule Explorer.Mixfile do
       # `:spandex` tracing of `:ecto`
       {:spandex_ecto, "~> 0.7.0"},
       # Attach `:prometheus_ecto` to `:ecto`
-      {:telemetry, "~> 1.2.1"},
+      {:telemetry, "~> 1.3.0"},
       # `Timex.Duration` for `Explorer.Counters.AverageBlockTime.average_block_time/0`
       {:timex, "~> 3.7.1"},
       {:con_cache, "~> 1.0"},
-      {:tesla, "~> 1.11.1"},
+      {:tesla, "~> 1.12.1"},
       {:cbor, "~> 1.0"},
       {:cloak_ecto, "~> 1.3.0"},
       {:redix, "~> 1.1"},
       {:hammer_backend_redis, "~> 6.1"},
       {:logger_json, "~> 5.1"},
       {:typed_ecto_schema, "~> 0.4.1", runtime: false},
-      {:ueberauth, "~> 0.7"}
+      {:ueberauth, "~> 0.7"},
+      {:recon, "~> 2.5"},
+      {:varint, "~> 1.4"},
+      {:blake2, "~> 1.0"}
     ]
   end
 

@@ -48,11 +48,11 @@ server {
 }
 server {
     listen       443 ssl;
-    server_name  stats.kred.la-tribu.xyz;
+    server_name  stats.l2.1.relend.la-tribu.xyz;
 
-    ssl_certificate /etc/letsencrypt/live/stats.kred.la-tribu.xyz/fullchain.pem;
+    ssl_certificate /etc/letsencrypt/live/stats.l2.1.relend.la-tribu.xyz/fullchain.pem;
 
-    ssl_certificate_key /etc/letsencrypt/live/stats.kred.la-tribu.xyz/privkey.pem;
+    ssl_certificate_key /etc/letsencrypt/live/stats.l2.1.relend.la-tribu.xyz/privkey.pem;
 
     ssl_session_cache builtin:1000 shared:SSL:10m;
 

@@ -14,7 +14,13 @@ services:
         chmod -R 777 /app/dets &&
         chmod -R 777 /app/logs &&
         chmod -R 777 /app/lib/block_scout_web-6.10.0/priv/static &&
-        cp -r /app/lib/block_scout_web-*/priv/static/* /app/lib/block_scout_web-6.10.0/priv/static/ &&
+        echo 'Checking static files location:' &&
+        find /app -name static -type d &&
+        echo 'Checking block_scout_web directory:' &&
+        ls -la /app/lib/block_scout_web* &&
+        echo 'Checking priv directory:' &&
+        ls -la /app/lib/block_scout_web-6.10.0/priv &&
+        cp -rv /app/lib/block_scout_web-6.10.0/priv/static/* /app/lib/block_scout_web-6.10.0/priv/static/ &&
         bin/blockscout eval \"Elixir.Explorer.ReleaseTasks.create_and_migrate()\" &&
         bin/blockscout start
       "

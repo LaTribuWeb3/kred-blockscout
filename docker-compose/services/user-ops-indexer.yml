@@ -4,14 +4,10 @@ services:
   user-ops-indexer:
     image: ghcr.io/blockscout/user-ops-indexer:${USER_OPS_INDEXER_DOCKER_TAG:-latest}
     pull_policy: always
-    platform: linux/amd64
     restart: always
     container_name: 'user-ops-indexer'
-    extra_hosts:
-      - 'host.docker.internal:host-gateway'
-    env_file:
-      -  ../envs/common-user-ops-indexer.env
     environment:
-      - USER_OPS_INDEXER__INDEXER__RPC_URL=${USER_OPS_INDEXER__INDEXER__RPC_URL:-ws://host.docker.internal:8545/}
-      - USER_OPS_INDEXER__DATABASE__CONNECT__URL=${USER_OPS_INDEXER__DATABASE__CONNECT__URL:-postgresql://blockscout:ceWb1MeLBEeOIfk65gU8EjF8@db:5432/blockscout}
-      - USER_OPS_INDEXER__DATABASE__RUN_MIGRATIONS=true
+      - RPC_URL=https://l2.1.relend.la-tribu.xyz
+      - ENTRY_POINT=0x5FF137D4b0FDCD49DcA30c7CF57E578a026d2789
+      - DATABASE_URL=postgresql://blockscout:ceWb1MeLBEeOIfk65gU8EjF8@db:5432/blockscout
+      - PORT=8050

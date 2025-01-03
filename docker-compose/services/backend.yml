@@ -4,10 +4,17 @@ services:
   backend:
     image: blockscout/${DOCKER_REPO:-blockscout-zkevm}:${DOCKER_TAG:-latest}
     pull_policy: always
-    restart: always
+    restart: "no"
     stop_grace_period: 5m
     container_name: 'backend'
-    command: sh -c "bin/blockscout eval \"Elixir.Explorer.ReleaseTasks.create_and_migrate()\" && bin/blockscout start"
+    command: >
+      sh -c "
+        mkdir -p /app/lib/block_scout_web-6.10.0/priv/static &&
+        cd /app && 
+        mix phx.digest &&
+        bin/blockscout eval \"Elixir.Explorer.ReleaseTasks.create_and_migrate()\" &&
+        bin/blockscout start
+      "
     extra_hosts:
       - 'host.docker.internal:host-gateway'
     env_file:
@@ -15,3 +22,4 @@ services:
     volumes:
       - ./logs/:/app/logs/
       - ./dets/:/app/dets/
+      - ./static:/app/lib/block_scout_web-6.10.0/priv/static

@@ -11,9 +11,12 @@ services:
     command: >
       sh -c "
         mkdir -p /app/lib/block_scout_web-6.10.0/priv/static &&
-        chown -R blockscout:blockscout /app/dets &&
-        chown -R blockscout:blockscout /app/logs &&
-        su blockscout -c 'bin/blockscout eval \"Elixir.Explorer.ReleaseTasks.create_and_migrate()\" && bin/blockscout start'
+        chmod -R 777 /app/dets &&
+        chmod -R 777 /app/logs &&
+        chmod -R 777 /app/lib/block_scout_web-6.10.0/priv/static &&
+        cp -r /app/lib/block_scout_web-*/priv/static/* /app/lib/block_scout_web-6.10.0/priv/static/ &&
+        bin/blockscout eval \"Elixir.Explorer.ReleaseTasks.create_and_migrate()\" &&
+        bin/blockscout start
       "
     extra_hosts:
       - 'host.docker.internal:host-gateway'

@@ -9,8 +9,12 @@ services:
     container_name: 'backend'
     command: >
       sh -c "
-        mkdir -p /app/lib/block_scout_web-6.10.0/priv/static &&
-        cp -r /app/lib/block_scout_web-*/priv/static/* /app/lib/block_scout_web-6.10.0/priv/static/ &&
+        echo 'Checking app directory contents:' &&
+        ls -la /app &&
+        echo 'Checking lib directory contents:' &&
+        ls -la /app/lib &&
+        echo 'Checking static directory:' &&
+        find /app -name 'static' -type d &&
         bin/blockscout eval \"Elixir.Explorer.ReleaseTasks.create_and_migrate()\" &&
         bin/blockscout start
       "

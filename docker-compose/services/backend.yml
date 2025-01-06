@@ -33,8 +33,3 @@ services:
       - ./logs/:/app/logs/
       - ./dets/:/app/dets/
       - ./static:/app/lib/block_scout_web-6.10.0/priv/static
-      - /etc/letsencrypt:/etc/letsencrypt:ro
-    environment:
-      - ECTO_USE_SSL=true
-      - ETHEREUM_JSONRPC_TRANSPORT=https
-      - ETHEREUM_JSONRPC_HTTP_INSECURE=false

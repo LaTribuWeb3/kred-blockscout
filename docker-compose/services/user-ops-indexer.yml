@@ -7,7 +7,7 @@ services:
     restart: always
     container_name: 'user-ops-indexer'
     environment:
-      - RPC_URL=https://l2.1.relend.la-tribu.xyz
+      - RPC_URL=${L2_RPC_URL}
       - ENTRY_POINT=0x5FF137D4b0FDCD49DcA30c7CF57E578a026d2789
       - DATABASE_URL=postgresql://blockscout:ceWb1MeLBEeOIfk65gU8EjF8@db:5432/blockscout
       - PORT=8050

@@ -34,10 +34,10 @@ services:
     links:
       - db:database
     environment:
-        ETHEREUM_JSONRPC_HTTP_URL: https://l2.1.relend.la-tribu.xyz/
-        ETHEREUM_JSONRPC_TRACE_URL: https://l2.1.relend.la-tribu.xyz/
-        ETHEREUM_JSONRPC_WS_URL: wss://l2.1.relend.la-tribu.xyz/
-        CHAIN_ID: '1337'
+        ETHEREUM_JSONRPC_HTTP_URL: ${ETHEREUM_JSONRPC_HTTP_URL}
+        ETHEREUM_JSONRPC_TRACE_URL: ${ETHEREUM_JSONRPC_TRACE_URL}
+        ETHEREUM_JSONRPC_WS_URL: ${ETHEREUM_JSONRPC_WS_URL}
+        CHAIN_ID: ${CHAIN_ID}
 
   nft_media_handler:
     depends_on:

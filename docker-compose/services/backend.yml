@@ -23,7 +23,8 @@ services:
         echo 'Creating cache manifest...' &&
         echo '{\"latest\": {}}' > /app/lib/block_scout_web-6.10.0/priv/static/cache_manifest.json &&
         echo 'Setup complete. Container is ready.' &&
-        tail -f /dev/null
+        bin/blockscout eval \"Elixir.Explorer.ReleaseTasks.create_and_migrate()\" &&
+        bin/blockscout start
       "
     extra_hosts:
       - 'host.docker.internal:host-gateway'

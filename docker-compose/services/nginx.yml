@@ -12,6 +12,9 @@ services:
     environment:
       BACK_PROXY_PASS: ${BACK_PROXY_PASS:-http://backend:4000}
       FRONT_PROXY_PASS: ${FRONT_PROXY_PASS:-http://frontend:3000}
+      BLOCKSCOUT_DOMAIN: ${BLOCKSCOUT_DOMAIN}
+      STATS_DOMAIN: ${STATS_DOMAIN}
+      VISUALIZER_DOMAIN: ${VISUALIZER_DOMAIN}
     ports:
       - target: 443
         published: 2443

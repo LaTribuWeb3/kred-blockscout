@@ -129,6 +129,37 @@ update_repository() {
     cd -
 }
 
+# Function to check if a port is available
+check_port_available() {
+    local port=$1
+    if netstat -tuln | grep -q ":$port "; then
+        return 1
+    fi
+    return 0
+}
+
+# Function to calculate and validate ports for an instance
+validate_instance_ports() {
+    local instance_number=$1
+    local base_ports=(443 8080 8081 7432) # Add all base ports used in your services
+    local collision_found=false
+    
+    echo "Validating ports for instance $instance_number..."
+    
+    for base_port in "${base_ports[@]}"; do
+        local new_port=$((base_port + instance_number * 1000))
+        if ! check_port_available "$new_port"; then
+            echo "❌ Port $new_port is already in use (base port: $base_port)"
+            collision_found=true
+        fi
+    done
+    
+    if [ "$collision_found" = true ]; then
+        return 1
+    fi
+    return 0
+}
+
 # Function to deploy a single instance
 deploy_instance() {
     local instance_number=$1
@@ -136,6 +167,12 @@ deploy_instance() {
     local domain_base="l2.$instance_number.relend.la-tribu.xyz"
     
     echo "Deploying instance $instance_number with domain base: $domain_base"
+    
+    # Validate ports before proceeding
+    if ! validate_instance_ports "$instance_number"; then
+        echo "❌ Port validation failed. Aborting deployment."
+        return 1
+    fi
     
     # Create temporary env file
     export DOMAIN_BASE=$domain_base
@@ -186,10 +223,38 @@ deploy_instance() {
         done
     fi
     
-    # Start docker compose with project name
+    # Temporarily modify ports in docker-compose files
     cd /root/kred-blockscout/docker-compose
+    echo "Adjusting ports for instance $instance_number..."
+    
+    # Create temporary files with adjusted ports
+    for service_file in services/*.yml; do
+        # Create a backup and modify the file
+        cp "$service_file" "${service_file}.bak"
+        perl -i -pe "s/published: (\d+)/published: @{[\$1 + $instance_number * 1000]}/g" "$service_file"
+        
+        # Verify the changes
+        if ! grep -q "published:" "$service_file"; then
+            echo "⚠️ Warning: No published ports found in $service_file"
+        fi
+    done
+    
+    # Start docker compose with project name
     DOMAIN_BASE=$domain_base docker compose -p $project_name down -v || true
-    DOMAIN_BASE=$domain_base docker compose -p $project_name up -d
+    if ! DOMAIN_BASE=$domain_base docker compose -p $project_name up -d; then
+        echo "❌ Docker compose failed to start"
+        # Restore original files even if deployment fails
+        for service_file in services/*.yml; do
+            mv "${service_file}.bak" "$service_file"
+        done
+        return 1
+    fi
+    
+    # Restore original files
+    for service_file in services/*.yml; do
+        mv "${service_file}.bak" "$service_file"
+    done
+    
     cd -
     
     check_status "Docker compose deployment for instance $instance_number"

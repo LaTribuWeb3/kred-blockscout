@@ -134,11 +134,13 @@ deploy_instance() {
     local instance_number=$1
     local project_name="blockscout-l2-$instance_number"
     local domain_base="l2.$instance_number.relend.la-tribu.xyz"
+    local port_prefix=$((instance_number + 1))
     
     echo "Deploying instance $instance_number with domain base: $domain_base"
     
     # Create temporary env file
     export DOMAIN_BASE=$domain_base
+    export PORT_PREFIX=$port_prefix
     
     # Stop nginx before certificate generation
     if systemctl is-active --quiet nginx; then
@@ -169,7 +171,7 @@ deploy_instance() {
     done
     
     # Generate Nginx configuration
-    generate_nginx_config "$domain_base" "$port_suffix"
+    generate_nginx_config "$domain_base" "$port_prefix"
     
     # Start nginx after certificate generation
     echo "Starting nginx service..."
@@ -188,8 +190,8 @@ deploy_instance() {
     
     # Start docker compose with project name
     cd /root/kred-blockscout/docker-compose
-    DOMAIN_BASE=$domain_base docker compose -p $project_name down -v || true
-    DOMAIN_BASE=$domain_base docker compose -p $project_name up -d
+    DOMAIN_BASE=$domain_base PORT_PREFIX=$port_prefix docker compose -p $project_name down -v || true
+    DOMAIN_BASE=$domain_base PORT_PREFIX=$port_prefix docker compose -p $project_name up -d
     cd -
     
     check_status "Docker compose deployment for instance $instance_number"

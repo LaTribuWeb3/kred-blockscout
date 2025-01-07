@@ -12,6 +12,114 @@ check_status() {
     fi
 }
 
+# Function to generate nginx configuration
+generate_nginx_config() {
+    local domain_base=$1
+    local port_prefix=$2
+    local config_file="/etc/nginx/sites-enabled/blockscout-l2-${port_prefix}"
+    
+    # Create the configuration content
+    cat > "$config_file" << EOL
+# stats.${domain_base} configuration
+server {
+    listen 80;
+    server_name stats.${domain_base};
+
+    location / {
+        proxy_pass http://localhost:${port_prefix}8080;
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade \$http_upgrade;
+        proxy_set_header Connection 'upgrade';
+        proxy_set_header Host \$host;
+        proxy_cache_bypass \$http_upgrade;
+    }
+}
+
+server {
+    listen 443 ssl;
+    server_name stats.${domain_base};
+
+    ssl_certificate /etc/letsencrypt/live/stats.${domain_base}/fullchain.pem;
+    ssl_certificate_key /etc/letsencrypt/live/stats.${domain_base}/privkey.pem;
+
+    location / {
+        proxy_pass https://localhost:${port_prefix}443;
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade \$http_upgrade;
+        proxy_set_header Connection 'upgrade';
+        proxy_set_header Host \$host;
+        proxy_cache_bypass \$http_upgrade;
+    }
+}
+
+# visualizer.${domain_base} configuration
+server {
+    listen 80;
+    server_name visualizer.${domain_base};
+
+    location / {
+        proxy_pass http://localhost:${port_prefix}8080;
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade \$http_upgrade;
+        proxy_set_header Connection 'upgrade';
+        proxy_set_header Host \$host;
+        proxy_cache_bypass \$http_upgrade;
+    }
+}
+
+server {
+    listen 443 ssl;
+    server_name visualizer.${domain_base};
+
+    ssl_certificate /etc/letsencrypt/live/visualizer.${domain_base}/fullchain.pem;
+    ssl_certificate_key /etc/letsencrypt/live/visualizer.${domain_base}/privkey.pem;
+
+    location / {
+        proxy_pass https://localhost:${port_prefix}443;
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade \$http_upgrade;
+        proxy_set_header Connection 'upgrade';
+        proxy_set_header Host \$host;
+        proxy_cache_bypass \$http_upgrade;
+    }
+}
+
+# blockscout.${domain_base} configuration
+server {
+    listen 80;
+    server_name blockscout.${domain_base};
+
+    location / {
+        proxy_pass http://localhost:${port_prefix}8080;
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade \$http_upgrade;
+        proxy_set_header Connection 'upgrade';
+        proxy_set_header Host \$host;
+        proxy_cache_bypass \$http_upgrade;
+    }
+}
+
+server {
+    listen 443 ssl;
+    server_name blockscout.${domain_base};
+
+    ssl_certificate /etc/letsencrypt/live/blockscout.${domain_base}/fullchain.pem;
+    ssl_certificate_key /etc/letsencrypt/live/blockscout.${domain_base}/privkey.pem;
+
+    location / {
+        proxy_pass https://localhost:${port_prefix}443;
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade \$http_upgrade;
+        proxy_set_header Connection 'upgrade';
+        proxy_set_header Host \$host;
+        proxy_cache_bypass \$http_upgrade;
+    }
+}
+EOL
+
+    check_status "Nginx configuration generation for ${domain_base}"
+}
+
 # Function to update repository
 update_repository() {
     echo "Updating kred-blockscout repository..."
@@ -61,6 +169,9 @@ deploy_instance() {
             echo "✅ SSL certificate already exists for $domain"
         fi
     done
+    
+    # Generate Nginx configuration
+    generate_nginx_config "$domain_base" "$port_prefix"
     
     # Start nginx after certificate generation
     echo "Starting nginx service..."

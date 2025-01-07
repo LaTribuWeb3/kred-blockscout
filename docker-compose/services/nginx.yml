@@ -18,8 +18,8 @@ services:
       VISUALIZER_DOMAIN: ${VISUALIZER_DOMAIN}
     ports:
       - target: 443
-        published: ${PORT_PREFIX}443
+        published: 443
       - target: 8080
-        published: ${PORT_PREFIX}8080
+        published: 8080
       - target: 8081
-        published: ${PORT_PREFIX}8081
+        published: 8081

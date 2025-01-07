@@ -6,4 +6,4 @@ services:
     pull_policy: always
     platform: linux/amd64
     restart: always
-    container_name: '${PROJECT_NAME}-sig-provider'
+    container_name: '${COMPOSE_PROJECT_NAME}-sig-provider'

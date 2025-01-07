@@ -179,7 +179,7 @@ deploy_instance() {
     check_status "Nginx start"
     
     # Check for existing containers and remove them if found
-    existing_containers=$(docker ps -q --filter "name=$project_name-backend")
+    existing_containers=$(docker ps -q --filter "name=$project_name-backend-1")
     if [ -n "$existing_containers" ]; then
         echo "Stopping backend containers for $project_name..."
         for container in $existing_containers; do

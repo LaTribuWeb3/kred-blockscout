@@ -226,8 +226,8 @@ fi
 # Update repository before deployment
 update_repository
 
-# Deploy instances
-deploy_instance "1"
-deploy_instance "2"
+for i in {1..5}; do
+    deploy_instance "$i"
+done
 
 echo "✨ Both instances have been deployed successfully!"

@@ -171,14 +171,6 @@ deploy_instance() {
         fi
     done
     
-    # Generate Nginx configuration
-    generate_nginx_config "$domain_base" "$instance_number"
-    
-    # Start nginx after certificate generation
-    echo "Starting nginx service..."
-    systemctl start nginx
-    check_status "Nginx start"
-    
     # Check for existing containers and remove them if found
     existing_containers=$(docker ps -q --filter "name=$project_name-backend")
     if [ -n "$existing_containers" ]; then
@@ -188,6 +180,14 @@ deploy_instance() {
             check_status "Backend container stop for $container"
         done
     fi
+    
+    # Generate Nginx configuration
+    generate_nginx_config "$domain_base" "$instance_number"
+    
+    # Start nginx after certificate generation
+    echo "Starting nginx service..."
+    systemctl start nginx
+    check_status "Nginx start"
     
     # Start docker compose with project name
     cd /root/kred-blockscout/docker-compose

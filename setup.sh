@@ -181,6 +181,12 @@ deploy_instance() {
         done
     fi
     
+    # Start docker compose with project name
+    cd /root/kred-blockscout/docker-compose
+    DOMAIN_BASE=$domain_base PORT_PREFIX=$port_prefix docker compose -p $project_name down -v || true
+    DOMAIN_BASE=$domain_base PORT_PREFIX=$port_prefix docker compose -p $project_name up -d
+    cd -
+    
     # Generate Nginx configuration
     generate_nginx_config "$domain_base" "$instance_number"
     
@@ -188,12 +194,6 @@ deploy_instance() {
     echo "Starting nginx service..."
     systemctl start nginx
     check_status "Nginx start"
-    
-    # Start docker compose with project name
-    cd /root/kred-blockscout/docker-compose
-    DOMAIN_BASE=$domain_base PORT_PREFIX=$port_prefix docker compose -p $project_name down -v || true
-    DOMAIN_BASE=$domain_base PORT_PREFIX=$port_prefix docker compose -p $project_name up -d
-    cd -
     
     check_status "Docker compose deployment for instance $instance_number"
 }

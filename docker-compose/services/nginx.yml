@@ -17,9 +17,6 @@ services:
       STATS_DOMAIN: ${STATS_DOMAIN}
       VISUALIZER_DOMAIN: ${VISUALIZER_DOMAIN}
     ports:
-      - target: 443
-        published: ${PORT_PREFIX}443
-      - target: 8080
-        published: ${PORT_PREFIX}8080
-      - target: 8081
-        published: ${PORT_PREFIX}8081
+      - 443
+      - 8080
+      - 8081

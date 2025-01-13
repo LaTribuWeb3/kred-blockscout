@@ -16,6 +16,8 @@ check_status() {
 generate_nginx_config() {
     local domain_base=$1
     local port_prefix=$2
+    local exposed_443_port=$(docker inspect -f '{{(index (index .NetworkSettings.Ports "443/tcp") 0).HostPort}}' blockscout-l2-${port_prefix}-proxy)
+    local exposed_8080_port=$(docker inspect -f '{{(index (index .NetworkSettings.Ports "8080/tcp") 0).HostPort}}' blockscout-l2-${port_prefix}-proxy)
     local config_file="/etc/nginx/sites-enabled/blockscout-l2-${port_prefix}"
     
     # Create the configuration content
@@ -26,7 +28,7 @@ server {
     server_name stats.${domain_base};
 
     location / {
-        proxy_pass http://localhost:${port_prefix}8080;
+        proxy_pass http://localhost:${exposed_8080_port};
         proxy_http_version 1.1;
         proxy_set_header Upgrade \$http_upgrade;
         proxy_set_header Connection 'upgrade';
@@ -43,7 +45,7 @@ server {
     ssl_certificate_key /etc/letsencrypt/live/stats.${domain_base}/privkey.pem;
 
     location / {
-        proxy_pass https://localhost:${port_prefix}443;
+        proxy_pass https://localhost:${exposed_443_port};
         proxy_http_version 1.1;
         proxy_set_header Upgrade \$http_upgrade;
         proxy_set_header Connection 'upgrade';
@@ -58,7 +60,7 @@ server {
     server_name visualizer.${domain_base};
 
     location / {
-        proxy_pass http://localhost:${port_prefix}8080;
+        proxy_pass http://localhost:${exposed_8080_port};
         proxy_http_version 1.1;
         proxy_set_header Upgrade \$http_upgrade;
         proxy_set_header Connection 'upgrade';
@@ -75,7 +77,7 @@ server {
     ssl_certificate_key /etc/letsencrypt/live/visualizer.${domain_base}/privkey.pem;
 
     location / {
-        proxy_pass https://localhost:${port_prefix}443;
+        proxy_pass https://localhost:${exposed_443_port};
         proxy_http_version 1.1;
         proxy_set_header Upgrade \$http_upgrade;
         proxy_set_header Connection 'upgrade';
@@ -90,7 +92,7 @@ server {
     server_name blockscout.${domain_base};
 
     location / {
-        proxy_pass http://localhost:${port_prefix}8080;
+        proxy_pass http://localhost:${port_8080_prefix};
         proxy_http_version 1.1;
         proxy_set_header Upgrade \$http_upgrade;
         proxy_set_header Connection 'upgrade';
@@ -107,7 +109,7 @@ server {
     ssl_certificate_key /etc/letsencrypt/live/blockscout.${domain_base}/privkey.pem;
 
     location / {
-        proxy_pass https://localhost:${port_prefix}443;
+        proxy_pass https://localhost:${exposed_443_port};
         proxy_http_version 1.1;
         proxy_set_header Upgrade \$http_upgrade;
         proxy_set_header Connection 'upgrade';
@@ -134,7 +136,6 @@ deploy_instance() {
     local instance_number=$1
     local project_name="blockscout-l2-$instance_number"
     local domain_base="l2.$instance_number.relend.la-tribu.xyz"
-    local port_prefix=$((instance_number + 1))
     
     echo "Deploying instance $instance_number with domain base: $domain_base"
     
@@ -171,7 +172,7 @@ deploy_instance() {
     done
     
     # Generate Nginx configuration
-    generate_nginx_config "$domain_base" "$port_prefix"
+    generate_nginx_config "$domain_base" "$instance_number"
     
     # Start nginx after certificate generation
     echo "Starting nginx service..."
@@ -179,7 +180,7 @@ deploy_instance() {
     check_status "Nginx start"
     
     # Check for existing containers and remove them if found
-    existing_containers=$(docker ps -q --filter "name=$project_name-backend-1")
+    existing_containers=$(docker ps -q --filter "name=$project_name-backend")
     if [ -n "$existing_containers" ]; then
         echo "Stopping backend containers for $project_name..."
         for container in $existing_containers; do

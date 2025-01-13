@@ -92,7 +92,7 @@ server {
     server_name blockscout.${domain_base};
 
     location / {
-        proxy_pass http://localhost:${port_8080_prefix};
+        proxy_pass http://localhost:${exposed_8080_port};
         proxy_http_version 1.1;
         proxy_set_header Upgrade \$http_upgrade;
         proxy_set_header Connection 'upgrade';

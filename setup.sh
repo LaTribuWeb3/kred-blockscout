@@ -186,6 +186,8 @@ deploy_instance() {
     DOMAIN_BASE=$domain_base PORT_PREFIX=$port_prefix docker compose -p $project_name down -v || true
     DOMAIN_BASE=$domain_base PORT_PREFIX=$port_prefix docker compose -p $project_name up -d
     cd -
+
+    sleep 5
     
     # Generate Nginx configuration
     generate_nginx_config "$domain_base" "$instance_number"

@@ -21,7 +21,7 @@ docker-compose up --build
 
 This command uses `docker-compose.yml` by-default, which builds the backend of the explorer into the Docker image and runs 9 Docker containers:
 
-- Postgres 14.x database, which will be available at port 7432 on the host machine.
+- Postgres 14.x database, which will be available at a random port associated to 5432 on the host machine.
 - Redis database of the latest version.
 - Blockscout backend with api at /api path.
 - Nginx proxy to bind backend, frontend and microservices.

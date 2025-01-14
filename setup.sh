@@ -233,4 +233,4 @@ for i in {1..5}; do
     deploy_instance "$i"
 done
 
-echo "✨ Both instances have been deployed successfully!"
+echo "✨ All instances have been deployed successfully!"

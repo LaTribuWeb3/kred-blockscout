@@ -235,8 +235,17 @@ fi
 # Update repository before deployment
 update_repository
 
-for i in {1..5}; do
-    deploy_instance "$i"
-done
+# Replace the fixed loop with argument handling
+if [ $# -eq 0 ]; then
+    # No arguments provided - deploy all instances (original behavior)
+    for i in {1..5}; do
+        deploy_instance "$i"
+    done
+else
+    # Deploy only specified instances
+    for instance in "$@"; do
+        deploy_instance "$instance"
+    done
+fi
 
 echo "✨ All instances have been deployed successfully!"

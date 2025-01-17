@@ -181,11 +181,11 @@ deploy_instance() {
         done
     fi
 
-    mkdir -p $PWD/docker-compose/services/${project_name}-db-data
-    chown -R 2000:2000 $PWD/docker-compose/services/${project_name}-db-data
+    mkdir -p $PWD/docker-compose/services/volumes/${project_name}-db-data
+    chown -R 2000:2000 $PWD/docker-compose/services/volumes/${project_name}-db-data
 
-    mkdir -p $PWD/docker-compose/services/${project_name}-stats-db-data
-    chown -R 2000:2000 $PWD/docker-compose/services/${project_name}-stats-db-data
+    mkdir -p $PWD/docker-compose/services/volumes/${project_name}-stats-db-data
+    chown -R 2000:2000 $PWD/docker-compose/services/volumes/${project_name}-stats-db-data
     
     # Start docker compose with project name
     cd /root/kred-blockscout/docker-compose

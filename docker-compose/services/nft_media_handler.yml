@@ -13,4 +13,4 @@ services:
     env_file:
       -  ../envs/common-nft-media-handler.env
     volumes:
-      - ./${COMPOSE_PROJECT_NAME}-logs/:/app/logs/
+      - ./volumes/${COMPOSE_PROJECT_NAME}-logs/:/app/logs/

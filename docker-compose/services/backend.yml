@@ -30,6 +30,6 @@ services:
     env_file:
       -  ../envs/common-blockscout.env
     volumes:
-      - ./${COMPOSE_PROJECT_NAME}-logs/:/app/logs/
-      - ./${COMPOSE_PROJECT_NAME}-dets/:/app/dets/
-      - ./${COMPOSE_PROJECT_NAME}-static:/app/lib/block_scout_web-6.10.0/priv/static
+      - ./volumes/${COMPOSE_PROJECT_NAME}-logs/:/app/logs/
+      - ./volumes/${COMPOSE_PROJECT_NAME}-dets/:/app/dets/
+      - ./volumes/${COMPOSE_PROJECT_NAME}-static:/app/lib/block_scout_web-6.10.0/priv/static

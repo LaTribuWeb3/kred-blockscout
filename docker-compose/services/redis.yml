@@ -6,4 +6,4 @@ services:
     container_name: ${COMPOSE_PROJECT_NAME}-redis-db
     command: redis-server
     volumes:
-      - ./${COMPOSE_PROJECT_NAME}-redis-data:/data
+      - ./volumes/${COMPOSE_PROJECT_NAME}-redis-data:/data

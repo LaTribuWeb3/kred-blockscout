@@ -181,11 +181,28 @@ deploy_instance() {
         done
     fi
 
-    mkdir -p $PWD/docker-compose/services/volumes/${project_name}-db-data
-    chown -R 2000:2000 $PWD/docker-compose/services/volumes/${project_name}-db-data
+    # Clean up Docker volumes
+    echo "Pruning Docker volumes..."
+    docker volume prune -f
+    check_status "Docker volume pruning"
 
-    mkdir -p $PWD/docker-compose/services/volumes/${project_name}-stats-db-data
-    chown -R 2000:2000 $PWD/docker-compose/services/volumes/${project_name}-stats-db-data
+    # Remove mounted folders
+    echo "Cleaning up mounted folders..."
+    rm -rf "$PWD/docker-compose/services/volumes/${project_name}-db-data"
+    rm -rf "$PWD/docker-compose/services/volumes/${project_name}-blockscout-db-data"
+    rm -rf "$PWD/docker-compose/services/volumes/${project_name}-stats-db-data"
+    rm -rf "$PWD/docker-compose/services/volumes/${project_name}-redis-data"
+    rm -rf "$PWD/docker-compose/services/volumes/${project_name}-logs"
+    rm -rf "$PWD/docker-compose/services/volumes/${project_name}-dets"
+    rm -rf "$PWD/docker-compose/services/volumes/${project_name}-static"
+    check_status "Mounted folders cleanup"
+
+    # Create new directories with proper permissions
+    mkdir -p "$PWD/docker-compose/services/volumes/${project_name}-db-data"
+    chown -R 2000:2000 "$PWD/docker-compose/services/volumes/${project_name}-db-data"
+
+    mkdir -p "$PWD/docker-compose/services/volumes/${project_name}-stats-db-data"
+    chown -R 2000:2000 "$PWD/docker-compose/services/volumes/${project_name}-stats-db-data"
     
     # Start docker compose with project name
     cd /root/kred-blockscout/docker-compose

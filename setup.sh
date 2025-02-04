@@ -184,7 +184,7 @@ deploy_instance() {
     # Clean up Docker volumes
     echo "Pruning Docker volumes..."
     docker volume prune -f
-    docker containers prune -f
+    docker container prune -f
     check_status "Docker volume pruning"
 
     # Remove mounted folders
